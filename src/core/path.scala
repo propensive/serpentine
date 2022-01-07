@@ -36,25 +36,25 @@ object Relative:
     recur(text, 0)
 
 case class Relative(val ascent: Int, val parts: List[Text]):
-  def parent: Relative throws RootParentError =
+  def parent: Relative =
     if parts.isEmpty then Relative(ascent + 1, List()) else Relative(ascent, parts.init)
   
-  def ancestor(n: Int): Relative throws RootParentError =
+  def ancestor(n: Int): Relative =
     if n == 0 then Relative(ascent, parts) else parent.ancestor(n - 1)
   
-  // def absolute(pwd: AbsolutePath): AbsolutePath throws RootParentError =
+  // def absolute(pwd: AbsolutePath): AbsolutePath =
   //   if ascent == 0 then makeAbsolute(pwd.parts ++ parts)
   //   else Relative(ascent - 1, parts).absolute(pwd.parent)
   
   @targetName("access")
-  infix def /(filename: Text): Relative throws RootParentError = filename match
+  infix def /(filename: Text): Relative = filename match
     case t".." => if parts.isEmpty then Relative(ascent + 1, List())
                   else Relative(ascent, parts.init)
     case t"."  => Relative(ascent, parts)
     case _     => Relative(ascent, parts :+ filename)
   
   @targetName("addAll")
-  infix def ++(relative: Relative): Relative throws RootParentError =
+  infix def ++(relative: Relative): Relative =
     if relative.ascent == 0 then Relative(ascent, parts ++ relative.parts)
     else ancestor(relative.ascent) ++ Relative(0, relative.parts)
 
@@ -72,24 +72,24 @@ trait Root(val separator: Text, val prefix: Text):
 
   trait Path:
     def root: thisRoot.type = thisRoot
-    def parent: Path throws RootParentError
-    def ancestor(ascent: Int): Path throws RootParentError
+    def parent: Path
+    def ancestor(ascent: Int): Path
     
     @targetName("access")
-    infix def /(filename: Text): Path throws RootParentError
+    infix def /(filename: Text): Path
     
     @targetName("addAll")
-    infix def ++(relative: Relative): Path throws RootParentError
+    infix def ++(relative: Relative): Path
 
   object Path:
     object Absolute:
       given Show[Absolute] = path => path.parts.join(prefix, separator, t"")
 
     open class Absolute(val parts: List[Text]) extends Path:
-      def parent: AbsolutePath throws RootParentError =
+      def parent: AbsolutePath =
         if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
 
-      def ancestor(ascent: Int): AbsolutePath throws RootParentError =
+      def ancestor(ascent: Int): AbsolutePath =
         if ascent == 0 then makeAbsolute(parts)
         else if parts.isEmpty then throw RootParentError(root)
         else parent.ancestor(ascent - 1)
@@ -103,13 +103,13 @@ trait Root(val separator: Text, val prefix: Text):
 
 
       @targetName("access")
-      infix def /(filename: Text): AbsolutePath throws RootParentError = filename match
+      infix def /(filename: Text): AbsolutePath = filename match
         case t".." => if parts.isEmpty then throw RootParentError(root) else makeAbsolute(parts.init)
         case t"."  => makeAbsolute(parts)
         case _     => makeAbsolute(parts :+ filename)
       
       @targetName("addAll")
-      infix def ++(relative: Relative): AbsolutePath throws RootParentError =
+      infix def ++(relative: Relative): AbsolutePath =
         if relative.ascent > 0 then ancestor(relative.ascent) ++ Relative(0, relative.parts)
         else makeAbsolute(parts ++ relative.parts)
       
